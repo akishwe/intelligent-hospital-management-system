@@ -1,0 +1,24 @@
+from datetime import date
+from typing import Optional
+from pydantic import BaseModel,Field
+
+
+class PatientBase(BaseModel):
+    first_name: str = Field(...,min_length=1, max_length=100)
+    last_name: str = Field(...,min_length=1, max_length=100)
+    gender: str = Field(...,description="Male/Female/Other")
+    date_of_birth: date
+    phone_number: str = Field(...,min_length=10, max_length=15)
+    email: Optional[str] = None
+    address: Optional[str] = None
+
+
+class PatientCreate(PatientBase):
+    pass
+
+
+class PatientResponse(PatientBase):
+    id: int
+
+    class Config:
+        form_attributes = True

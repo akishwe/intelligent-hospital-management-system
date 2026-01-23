@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date
 from app.core.database import Base, TimestampMixin
 
-class Patient(Base, TimestampMixin):
+class Patient(TimestampMixin, Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True, index=True)

@@ -1,21 +1,29 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from functools import lru_cache
+
 
 class Settings(BaseSettings):
-    app_name: str = Field("Hospital Management System")
-    env: str = Field(default="development")
-    debug: bool = Field(default=False)
-    jwt_secret: str 
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    app_name: str = "Hospital Management System"
+
     db_host: str
-    db_port: int = 3600
+    db_port: int
     db_user: str
     db_password: str
     db_name: str
 
-    class Config:
-        env_file=".env"
-        case_sensitive = False
+    @property
+    def database_url(self) -> str:
+        return (
+            f"mysql+pymysql://{self.db_user}:"
+            f"{self.db_password}@{self.db_host}:"
+            f"{self.db_port}/{self.db_name}"
+        )
 
-settings = Settings()
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

@@ -1,24 +1,30 @@
-from typing import Dict
+from sqlalchemy import Session
+from sqlalchemy.exc import IntegrityError
+from app.modules.patient.models import Patient
 from app.modules.patient.schemas import PatientCreate
 
 class PatientService:
 
-    @staticmethod
-    def create_patient(patient_data: PatientCreate) -> Dict:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def create_patient(self, patient_data: PatientCreate) -> Patient:
 
-        phone = patient_data.phone_number
-        if not phone.isdigit() and len(phone) in (10,12):
+        if not patient_data.phone_number.isdigit() or len(patient_data.phone_number) not in(10,12):
             raise ValueError("Invalid phone number format.")
         
-        return {
-            "id" : 1,
-            "first_name": patient_data.first_name,
-            "last_name": patient_data.last_name,
-            "gender": patient_data.gender,
-            "date_of_birth": patient_data.date_of_birth,
-            "phone_number": patient_data.phone_number,
-            "email": patient_data.email,
-            "address": patient_data.address
-        }
-
+        patient = Patient(**patient_data.model_dump())
+        self.db.add(patient)
+        try:
+            self.db.commit()
+            self.db.refresh(patient)
+            return patient
+        except IntegrityError:
+            self.db.rollback()
+            raise ValueError("Phone number or email already exists.")
+        
+    def get_all_patients(self) -> list[Patient]:
+        return self.db.query(Patient).all()
     
+    def get_patient_by_id(self, patient_id: int) -> Patient | None:
+        return self.db.query(Patient).filter(Patient.id == patient_id).first()

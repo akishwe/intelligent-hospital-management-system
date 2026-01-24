@@ -19,6 +19,8 @@ class PatientCreate(PatientBase):
 
 class PatientResponse(PatientBase):
     id: int
+    created_at: Optional[date] = None
+    updated_at: Optional[date] = None
 
     class Config:
-        form_attributes = True
+        from_attributes = True

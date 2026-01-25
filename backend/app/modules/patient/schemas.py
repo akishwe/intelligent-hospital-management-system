@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel,Field
 
 
@@ -33,3 +33,7 @@ class PatientResponse(PatientBase):
 
     class Config:
         from_attributes = True
+
+class PaginatedPatientResponse(BaseModel):
+    total: int
+    patients: List[PatientResponse]

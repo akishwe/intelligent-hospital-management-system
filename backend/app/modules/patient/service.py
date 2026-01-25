@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from typing import Tuple, List
 from sqlalchemy.exc import IntegrityError
 from app.modules.patient.models import Patient
 from app.modules.patient.schemas import PatientCreate, PatientUpdate
@@ -57,5 +58,7 @@ class PatientService:
         self.db.delete(patient)
         self.db.commit()
 
-    def get_all_patients(self) -> list[Patient]:
-        return self.db.query(Patient).all()
+    def get_all_patients(self, skip: int = 0, limit: int = 10) -> Tuple[List[Patient], int]:
+        total = self.db.query(Patient).count()
+        patients = self.db.query(Patient).offset(skip).limit(limit).all()
+        return patients, total

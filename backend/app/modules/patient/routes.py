@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi import Query
 from app.core.deps import get_db
-from app.modules.patient.schemas import PatientCreate, PatientResponse, PatientUpdate
+from app.modules.patient.schemas import PatientCreate, PatientResponse, PatientUpdate, PaginatedPatientResponse
 from app.modules.patient.service import PatientService
 from app.core.exceptions import InvalidPhoneNumber, DuplicatePatient, PatientNotFound
 
@@ -21,10 +22,11 @@ def create_patient(payload: PatientCreate, db: Session = Depends(get_db)):
     
 
 
-@router.get("/", response_model=List[PatientResponse])
-def get_all_patients(db: Session = Depends(get_db)):
+@router.get("/", response_model=PaginatedPatientResponse)
+def get_all_patients(skip: int = Query(0, ge=0, description="Number of records to skip"), limit: int = Query(10, gt=0, le=100, description="Max number of records to return"),db: Session = Depends(get_db)):
     service = PatientService(db)
-    return service.get_all_patients()
+    patients, total = service.get_all_patients(skip=skip, limit=limit)
+    return {"patients": patients, "total": total}
 
 
 @router.get("/{patient_id}", response_model=PatientResponse)

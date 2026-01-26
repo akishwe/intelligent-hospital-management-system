@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from app.core.config import settings
 from app.modules.patient.routes import router as patient_router
+from app.modules.auth.router import router as auth_router
 from app.modules.patient import models
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 app.include_router(patient_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

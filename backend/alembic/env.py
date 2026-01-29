@@ -25,6 +25,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.core.database import Base
 from app.modules.patient import models  # noqa: F401
+from app.modules.auth import models  # noqa: F401
 
 target_metadata = Base.metadata
 

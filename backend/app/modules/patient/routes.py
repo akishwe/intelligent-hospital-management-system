@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi import Query
 from app.core.deps import get_db
-from app.modules.patient.schemas import PatientCreate, PatientResponse
+from app.modules.patient.schemas import PatientCreate, PatientResponse, PatientUpdate, PaginatedPatientResponse
 from app.modules.patient.service import PatientService
-from app.core.exceptions import InvalidPhoneNumber, DuplicatePatient
+from app.core.exceptions import InvalidPhoneNumber, DuplicatePatient, PatientNotFound
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
@@ -21,10 +22,11 @@ def create_patient(payload: PatientCreate, db: Session = Depends(get_db)):
     
 
 
-@router.get("/", response_model=List[PatientResponse])
-def get_all_patients(db: Session = Depends(get_db)):
+@router.get("/", response_model=PaginatedPatientResponse)
+def get_all_patients(skip: int = Query(0, ge=0, description="Number of records to skip"), limit: int = Query(10, gt=0, le=100, description="Max number of records to return"),db: Session = Depends(get_db)):
     service = PatientService(db)
-    return service.get_all_patients()
+    patients, total = service.get_all_patients(skip=skip, limit=limit)
+    return {"patients": patients, "total": total}
 
 
 @router.get("/{patient_id}", response_model=PatientResponse)
@@ -33,3 +35,25 @@ def get_patient(patient_id: int, db: Session = Depends(get_db)):
     patient = service.get_patient_by_id(patient_id)
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found.")
+    
+@router.put("/{patient_id}", response_model=PatientResponse)
+def update_patient(patient_id: int, payload: PatientUpdate, db: Session = Depends(get_db)):
+    service = PatientService(db)
+    try:
+        patient = service.update_patient(patient_id, payload)
+        return patient
+    except PatientNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except InvalidPhoneNumber as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except DuplicatePatient as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+@router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_patient(patient_id: int, db: Session = Depends(get_db)):
+    service = PatientService(db)
+    try:
+        service.delete_patient(patient_id)
+    except PatientNotFound as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    

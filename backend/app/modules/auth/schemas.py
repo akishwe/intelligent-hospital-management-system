@@ -1,6 +1,16 @@
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
+class UserInfo(BaseModel):
+    id: int
+    email: EmailStr
+    first_name: str
+    last_name: str
+    phone_number: str
+    role: str
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
+    
 class UserBase(BaseModel):
     email: EmailStr
     first_name: str
@@ -23,4 +33,7 @@ class UserResponse(UserBase):
     class Config:
         from_attributes = True
 
-    
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserInfo

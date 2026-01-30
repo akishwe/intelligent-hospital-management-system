@@ -8,6 +8,7 @@ class Patient(TimestampMixin, SoftDeleteMixin, Base):
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     date_of_birth = Column(Date, nullable=False)
+    mrn = Column(String(20), unique=True,index=True,nullable=False)
     gender = Column(String(10), nullable=False)
     phone_number = Column(String(15), nullable=False, unique=True)
     email = Column(String(255), nullable=True, unique=True)

@@ -42,6 +42,7 @@ class PatientUpdate(BaseModel):
 
 class PatientResponse(PatientBase):
     id: int
+    mrn: str
     created_at: Optional[date] = None
     updated_at: Optional[date] = None
 

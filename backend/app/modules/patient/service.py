@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy.orm import Session
 from typing import Tuple, List
 from sqlalchemy.exc import IntegrityError
@@ -23,6 +24,7 @@ class PatientService:
     def create_patient(self, patient_data: PatientCreate) -> Patient:
 
         patient = Patient(**patient_data.model_dump())
+        patient.mrn = "MRN-" + uuid.uuid4().hex[:8].upper()
         self.db.add(patient)
 
         try:

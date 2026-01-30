@@ -13,7 +13,7 @@ class PatientService:
     def get_patient_by_id(self, patient_id: int) -> Patient:
         patient = (
             self.db.query(Patient)
-            .filter(Patient.id == patient_id)
+            .filter(Patient.id == patient_id,Patient.is_deleted == False)
             .first()
         )
         if not patient:
@@ -55,7 +55,7 @@ class PatientService:
 
     def delete_patient(self, patient_id: int) -> None:
         patient = self.get_patient_by_id(patient_id)
-        self.db.delete(patient)
+        patient.soft_delete(patient)
         self.db.commit()
 
     def get_all_patients(self, skip: int = 0, limit: int = 10) -> Tuple[List[Patient], int]:

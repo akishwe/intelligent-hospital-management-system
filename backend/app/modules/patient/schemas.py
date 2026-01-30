@@ -1,6 +1,9 @@
 from datetime import date
 from typing import Optional, List
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field,field_validator
+from app.utils.validators import validate_phone_number
+
+
 
 
 class PatientBase(BaseModel):
@@ -8,9 +11,15 @@ class PatientBase(BaseModel):
     last_name: str = Field(...,min_length=1, max_length=100)
     gender: str = Field(...,description="Male/Female/Other")
     date_of_birth: date
-    phone_number: str = Field(...,min_length=10, max_length=15)
+    phone_number: str
     email: Optional[str] = None
     address: Optional[str] = None
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, v):
+        return validate_phone_number(v)
+
 
 
 class PatientCreate(PatientBase):
@@ -25,9 +34,15 @@ class PatientUpdate(BaseModel):
     email: Optional[str] = None
     address: Optional[str] = None
 
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, v):
+        return validate_phone_number(v)
+
 
 class PatientResponse(PatientBase):
     id: int
+    mrn: str
     created_at: Optional[date] = None
     updated_at: Optional[date] = None
 

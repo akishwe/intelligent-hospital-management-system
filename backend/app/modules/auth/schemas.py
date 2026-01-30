@@ -1,5 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, ConfigDict
+from pydantic import BaseModel, Field, EmailStr, ConfigDict,field_validator
+from app.utils.validators import validate_phone_number
 
 class UserInfo(BaseModel):
     id: int
@@ -17,6 +18,11 @@ class UserBase(BaseModel):
     last_name: str
     phone_number: str
     role: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def validate_phone_number(cls, v):
+        return validate_phone_number(v)
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6, max_length=64, description="Password must be between 6 and 64 characters long")

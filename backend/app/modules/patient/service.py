@@ -21,8 +21,6 @@ class PatientService:
         return patient
 
     def create_patient(self, patient_data: PatientCreate) -> Patient:
-        if not patient_data.phone_number.isdigit() or len(patient_data.phone_number) not in (10, 12):
-            raise InvalidPhoneNumber()
 
         patient = Patient(**patient_data.model_dump())
         self.db.add(patient)

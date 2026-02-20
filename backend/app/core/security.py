@@ -7,7 +7,13 @@ from jose import ExpiredSignatureError
 
 settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    argon2__memory_cost=102400,
+    argon2__time_cost=2,
+    argon2__parallelism=8,
+    deprecated="auto",
+)
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)

@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, Field, EmailStr, ConfigDict,field_validator
 from app.utils.validators import validate_phone_number
+from app.core.enums import UserRole
 
 class UserInfo(BaseModel):
     id: int
@@ -8,7 +9,7 @@ class UserInfo(BaseModel):
     first_name: str
     last_name: str
     phone_number: str
-    role: str
+    role: UserRole
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
     
@@ -17,7 +18,7 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     phone_number: str
-    role: str
+    role: UserRole
 
     @field_validator("phone_number")
     @classmethod

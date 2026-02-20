@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean,Enum
 from app.core.database import Base, TimestampMixin
-from app.modules.auth.roles import UserRole
-
+from app.core.enums import Gender
+from app.core.enums import UserRole
 class User(TimestampMixin, Base):
     __tablename__ = "users"
 
@@ -10,7 +10,7 @@ class User(TimestampMixin, Base):
     password = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    gender  = Column(String(10), nullable=True)
+    gender  = Column(Enum(Gender), nullable=True)
     date_of_birth = Column(String(10), nullable=True)
     address = Column(String(255), nullable=True)
     profile_picture = Column(String(255), nullable=True)

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_db
 from app.modules.auth.schemas import UserCreate, UserLogin, UserResponse,TokenResponse,UserInfo
 from app.modules.auth.service import AuthService
-from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser
+from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser, TokenExpired, InvalidToken
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -21,10 +21,13 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     service = AuthService(db)
     try:
         token, user = service.login(payload)
+        return TokenResponse(access_token=token, user=UserInfo.model_validate(user))   
 
-        return TokenResponse( access_token=token,user=UserInfo.model_validate(user))   
-
-    except InvalidCredentials:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    except InActiveUser:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+    except InvalidCredentials as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except InActiveUser as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except TokenExpired as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    except InvalidToken as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))

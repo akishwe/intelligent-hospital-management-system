@@ -1,3 +1,5 @@
+import uuid
+
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
@@ -29,6 +31,8 @@ def create_access_token(data: dict) -> str:
     to_encode.update({
         "exp": int(expire.timestamp()),  
         "iat": int(datetime.now(timezone.utc).timestamp()),
+        "nbf": int(datetime.now(timezone.utc).timestamp()),
+        "jti": str(uuid.uuid4()),
         "type": "access",
         "iss": settings.app_name,
         "aud": "hms-users",
@@ -44,6 +48,9 @@ def decode_access_token(token: str) -> dict:
             algorithms=[settings.jwt_algorithm],
             audience="hms-users",
             issuer=settings.app_name,
+            options={
+                "require": ["exp", "iat", "nbf", "iss", "aud", "jti"]
+            }
         )
         return payload
 

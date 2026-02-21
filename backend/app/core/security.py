@@ -1,11 +1,21 @@
+import uuid
+
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from app.core.config import get_settings
+from app.core.exceptions import InvalidToken, TokenExpired
+from jose import ExpiredSignatureError
 
 settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    argon2__memory_cost=102400,
+    argon2__time_cost=2,
+    argon2__parallelism=8,
+    deprecated="auto",
+)
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -19,26 +29,33 @@ def create_access_token(data: dict) -> str:
         minutes=settings.jwt_access_token_expire_minutes
     )
     to_encode.update({
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "exp": int(expire.timestamp()),  
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+        "nbf": int(datetime.now(timezone.utc).timestamp()),
+        "jti": str(uuid.uuid4()),
         "type": "access",
+        "iss": settings.app_name,
+        "aud": "hms-users",
     })
-
-    encoded_jwt = jwt.encode(
-        to_encode,
-        settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
-    )
-    return encoded_jwt
+    return jwt.encode(to_encode, settings.jwt_secret_key.get_secret_value(), algorithm=settings.jwt_algorithm)
 
 
 def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(
             token,
-            settings.jwt_secret_key,
+            settings.jwt_secret_key.get_secret_value(),
             algorithms=[settings.jwt_algorithm],
+            audience="hms-users",
+            issuer=settings.app_name,
+            options={
+                "require": ["exp", "iat", "nbf", "iss", "aud", "jti"]
+            }
         )
         return payload
-    except JWTError:
-        return None
+
+    except ExpiredSignatureError:
+        raise TokenExpired()
+
+    except JWTError as e:
+        raise InvalidToken(str(e))

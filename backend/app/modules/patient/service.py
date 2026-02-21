@@ -44,12 +44,9 @@ class PatientService:
     def update_patient(self, patient_id: int, data: PatientUpdate) -> Patient:
         patient = self.get_patient_by_id(patient_id)
 
-        if data.phone_number:
-            if not data.phone_number.isdigit() or len(data.phone_number) not in (10, 12):
-                logger.warning(f"Invalid phone number attempt | patient_id={patient_id} | phone={data.phone_number}")
-                raise InvalidPhoneNumber()
+        update_data =data.model_dump(exclude_unset=True)
 
-        for field, value in data.model_dump(exclude_unset=True).items():
+        for field, value in update_data.items():
             setattr(patient, field, value)
 
         try:
@@ -69,7 +66,9 @@ class PatientService:
         logger.info(f"Patient soft deleted | id={patient.id} | MRN={patient.mrn}")
 
     def get_all_patients(self, skip: int = 0, limit: int = 10) -> Tuple[List[Patient], int]:
-        total = self.db.query(Patient).count()
-        patients = self.db.query(Patient).offset(skip).limit(limit).all()
-        logger.debug(f"Fetched all patients | count={len(patients)} | total={total}")
+        limit = min(max(limit, 1), 100)
+        query = self.db.query(Patient).filter(Patient.is_deleted == False)
+        total = query.count()
+        patients = query.offset(skip).limit(limit).all()
+        logger.debug(f"Fetched patients | skip={skip} | limit={limit} | returned={len(patients)} | total={total}")
         return patients, total

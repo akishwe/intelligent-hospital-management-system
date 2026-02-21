@@ -5,9 +5,10 @@ from app.core.security import decode_access_token
 from sqlalchemy.orm import Session
 from typing import Generator
 from typing import List
+from datetime import datetime, timezone
+from app.core.exceptions import InvalidToken, TokenExpired
 
-
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Session:
     db = SessionLocal()
     try:
         yield db
@@ -22,7 +23,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     payload = decode_access_token(token)
 
     if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Invalid or expired token")
+        raise InvalidToken()
 
     return payload
 

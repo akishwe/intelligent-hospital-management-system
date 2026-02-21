@@ -1,3 +1,5 @@
+from urllib.parse import quote_plus
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from pydantic import SecretStr,Field
@@ -20,9 +22,10 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        password = quote_plus(self.db_password)
         return (
             f"mysql+pymysql://{self.db_user}:"
-            f"{self.db_password}@{self.db_host}:"
+            f"{password}@{self.db_host}:"
             f"{self.db_port}/{self.db_name}"
         )
 

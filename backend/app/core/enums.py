@@ -1,5 +1,4 @@
 from enum import Enum
-import enum
 
 class Gender(str, Enum):
     MALE = "Male"
@@ -12,6 +11,14 @@ class UserRole(str, Enum):
     DOCTOR = "doctor"
     NURSE = "nurse"
     RECEPTIONIST = "receptionist"
+    LAB_TECHNICIAN = "lab_technician"
+    PHARMACIST = "pharmacist"
+    ACCOUNTANT = "accountant"
+    BILLING_OFFICER = "billing_officer"
+    RADIOLOGIST = "radiologist"
+    SURGEON = "surgeon"
+    PHYSIOTHERAPIST = "physiotherapist"
+    PATIENT = "patient"
 
 class BloodGroup(str, Enum):
     A_POS = "A+"
@@ -32,15 +39,15 @@ class MaritalStatus(str, Enum):
     OTHER = "Other"
 
 class PersonType(str, Enum):
-    User = "User"
-    Patient = "Patient"
+    USER = "User"
+    PATIENT = "Patient"
 
 class ContactType(str, Enum):
-    Emergency = "Emergency"
-    Guardian = "Guardian"
-    Other = "Other"
+    EMERGENCY = "Emergency"
+    GUARDIAN = "Guardian"
+    OTHER = "Other"
 
-class AdmissionStatus(str,Enum):
+class AdmissionStatus(str, Enum):
     ACTIVE = "ACTIVE"
     DISCHARGED = "DISCHARGED"
     CANCELLED = "CANCELLED"

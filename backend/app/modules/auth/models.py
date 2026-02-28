@@ -54,24 +54,6 @@ class User(TimestampMixin, SoftDeleteMixin, Base):
         UniqueConstraint("hospital_id", "national_id", name="uq_user_hospital_national_id"),
     )
 
-class Qualification(Base):
-    __tablename__ = "qualifications"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-
-class Department(Base):
-    __tablename__ = "departments"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-
-class Specialization(Base):
-    __tablename__ = "specializations"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-
 
 class RevokedToken(TimestampMixin, Base):
     __tablename__ = "revoked_tokens"

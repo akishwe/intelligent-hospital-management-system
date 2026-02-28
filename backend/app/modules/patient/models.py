@@ -123,20 +123,3 @@ class Admission(TimestampMixin, Base):
     __table_args__ = (
         UniqueConstraint("hospital_id", "patient_id", "admission_date", name="uq_patient_admission"),
     )
-class Insurance(Base, TimestampMixin):
-    __tablename__ = "insurances"
-
-    id = Column(Integer, primary_key=True)
-    patient_id = Column(Integer, ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
-    provider_name = Column(String(100), nullable=False)
-    policy_number = Column(String(50), nullable=False)
-    coverage_type = Column(String(50), nullable=True)
-    start_date = Column(Date, nullable=True)
-    end_date = Column(Date, nullable=True)
-    active = Column(Boolean, default=True)
-
-    patient = relationship("Patient", back_populates="insurances")
-
-    __table_args__ = (
-        UniqueConstraint("patient_id", "provider_name", "policy_number", name="uq_patient_insurance"),
-    )

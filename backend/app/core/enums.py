@@ -11,12 +11,14 @@ class UserRole(str, Enum):
     DOCTOR = "doctor"
     NURSE = "nurse"
     RECEPTIONIST = "receptionist"
-
-class Gender(str, Enum):
-    MALE = "Male"
-    FEMALE = "Female"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    LAB_TECHNICIAN = "lab_technician"
+    PHARMACIST = "pharmacist"
+    ACCOUNTANT = "accountant"
+    BILLING_OFFICER = "billing_officer"
+    RADIOLOGIST = "radiologist"
+    SURGEON = "surgeon"
+    PHYSIOTHERAPIST = "physiotherapist"
+    PATIENT = "patient"
 
 class BloodGroup(str, Enum):
     A_POS = "A+"
@@ -35,3 +37,17 @@ class MaritalStatus(str, Enum):
     DIVORCED = "Divorced"
     WIDOWED = "Widowed"
     OTHER = "Other"
+
+class PersonType(str, Enum):
+    USER = "User"
+    PATIENT = "Patient"
+
+class ContactType(str, Enum):
+    EMERGENCY = "Emergency"
+    GUARDIAN = "Guardian"
+    OTHER = "Other"
+
+class AdmissionStatus(str, Enum):
+    ACTIVE = "ACTIVE"
+    DISCHARGED = "DISCHARGED"
+    CANCELLED = "CANCELLED"

@@ -3,11 +3,11 @@ from app.modules.auth.models import RevokedToken
 from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session
 from app.core.deps import get_db
+from fastapi.security import HTTPAuthorizationCredentials
 from app.modules.auth.schemas import UserCreate, UserLogin, UserResponse,TokenResponse,UserInfo
 from app.modules.auth.service import AuthService
+from fastapi_limiter.depends import RateLimiter
 from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser, TokenExpired, InvalidToken
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -20,8 +20,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     except UserAlreadyExists:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
     
-@router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(RateLimiter(times=5, seconds=60))])
 def login(payload: UserLogin, db: Session = Depends(get_db)):
     service = AuthService(db)
     try:

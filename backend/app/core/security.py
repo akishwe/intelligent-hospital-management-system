@@ -6,7 +6,9 @@ from jose import JWTError, jwt
 from app.core.config import get_settings
 from app.core.exceptions import InvalidToken, TokenExpired
 from jose import ExpiredSignatureError
-
+from app.core.deps import get_db
+from sqlalchemy.orm import Session
+from app.modules.auth.models import RevokedToken
 settings = get_settings()
 
 pwd_context = CryptContext(
@@ -36,11 +38,12 @@ def create_access_token(data: dict) -> str:
         "type": "access",
         "iss": settings.app_name,
         "aud": "hms-users",
+        "ip": data.get("ip")
     })
     return jwt.encode(to_encode, settings.jwt_secret_key.get_secret_value(), algorithm=settings.jwt_algorithm)
 
 
-def decode_access_token(token: str) -> dict:
+def decode_access_token(token: str, db: Session) -> dict:
     try:
         payload = jwt.decode(
             token,
@@ -48,14 +51,16 @@ def decode_access_token(token: str) -> dict:
             algorithms=[settings.jwt_algorithm],
             audience="hms-users",
             issuer=settings.app_name,
-            options={
-                "require": ["exp", "iat", "nbf", "iss", "aud", "jti"]
-            }
         )
+
+        jti = payload.get("jti")
+        if db.query(RevokedToken).filter_by(jti=jti).first():
+            raise InvalidToken("Token has been revoked")
+
         return payload
 
     except ExpiredSignatureError:
         raise TokenExpired()
 
-    except JWTError as e:
-        raise InvalidToken(str(e))
+    except JWTError:
+        raise InvalidToken()

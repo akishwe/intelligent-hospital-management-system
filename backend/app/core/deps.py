@@ -18,9 +18,9 @@ def get_db() -> Session:
 
 security = HTTPBearer()
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security),db: Session = Depends(get_db)):
     token = credentials.credentials
-    payload = decode_access_token(token)
+    payload = decode_access_token(token, db)
 
     if payload is None:
         raise InvalidToken()

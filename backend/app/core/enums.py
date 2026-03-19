@@ -51,3 +51,9 @@ class AdmissionStatus(str, Enum):
     ACTIVE = "ACTIVE"
     DISCHARGED = "DISCHARGED"
     CANCELLED = "CANCELLED"
+
+class AllergySeverity(str, Enum):
+    MILD = "Mild"
+    MODERATE = "Moderate"
+    SEVERE = "Severe"
+    LIFE_THREATENING = "Life-threatening"

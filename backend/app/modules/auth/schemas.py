@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
+from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator, root_validator
 from datetime import date, datetime, time
 from app.utils.validators import validate_phone_number
 from app.core.enums import UserRole, Gender
@@ -56,14 +56,43 @@ class UserBase(BaseModel):
     hospital_id: Optional[str] = None
     is_superuser: Optional[bool] = False
 
+    model_config = ConfigDict(from_attributes=True)
+
     @field_validator("phone_number")
     @classmethod
-    def validate_phone_number(cls, v):
+    def validate_phone(cls, v):
         return validate_phone_number(v)
+
+    @root_validator
+    def check_age_and_role(cls, values):
+        dob = values.get("date_of_birth")
+        role = values.get("role")
+        if dob:
+            age = (datetime.today().date() - dob).days // 365
+            if role in [UserRole.DOCTOR, UserRole.NURSE, UserRole.ADMIN] and age < 18:
+                raise ValueError(f"{role} must be at least 18 years old")
+        return values
+
+    @root_validator
+    def check_shift_times(cls, values):
+        start = values.get("shift_start")
+        end = values.get("shift_end")
+        if start and end and end <= start:
+            raise ValueError("shift_end must be after shift_start")
+        return values
+
+    @root_validator
+    def role_required_fields(cls, values):
+        role = values.get("role")
+        if role == UserRole.DOCTOR and not values.get("specialization"):
+            raise ValueError("Doctor must have a specialization")
+        if role in [UserRole.DOCTOR, UserRole.NURSE] and not values.get("qualification"):
+            raise ValueError(f"{role} must have a qualification")
+        return values
 
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6, max_length=64, description="Password must be between 6 and 64 characters long")
+    password: str = Field(..., min_length=6, max_length=64)
 
 
 class UserUpdate(BaseModel):
@@ -95,7 +124,7 @@ class UserUpdate(BaseModel):
 
     @field_validator("phone_number")
     @classmethod
-    def validate_phone_number(cls, v):
+    def validate_phone(cls, v):
         if v is None:
             return v
         return validate_phone_number(v)
@@ -113,9 +142,6 @@ class UserResponse(UserBase):
     account_locked_until: Optional[datetime] = None
     last_login: Optional[datetime] = None
     password_changed_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 
 class TokenResponse(BaseModel):

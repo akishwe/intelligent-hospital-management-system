@@ -1,9 +1,13 @@
+from app.core import security
+from app.modules.auth.models import RevokedToken
 from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session
 from app.core.deps import get_db
 from app.modules.auth.schemas import UserCreate, UserLogin, UserResponse,TokenResponse,UserInfo
 from app.modules.auth.service import AuthService
 from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser, TokenExpired, InvalidToken
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -17,6 +21,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
     
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 def login(payload: UserLogin, db: Session = Depends(get_db)):
     service = AuthService(db)
     try:
@@ -31,3 +36,19 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except InvalidToken as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+    
+@router.post("/logout")
+def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    token = credentials.credentials
+    payload = security.decode_access_token(token, db)
+
+    jti = payload.get("jti")
+
+    revoked = RevokedToken(jti=jti)
+    db.add(revoked)
+    db.commit()
+
+    return {"message": "Logged out successfully"}

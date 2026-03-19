@@ -1,9 +1,6 @@
-import datetime
 from datetime import datetime, timedelta, timezone
-from urllib import request
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from app.modules.auth.models import User
+from app.modules.auth.models import User, RevokedToken
 from app.modules.auth.schemas import UserCreate, UserLogin
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser
@@ -12,9 +9,9 @@ from app.core.logging import get_logger
 logger = get_logger("auth")
 
 class AuthService:
-    
     MAX_ATTEMPTS = 5
     LOCK_DURATION_MINUTES = 15
+
     def __init__(self, db: Session):
         self.db = db
 
@@ -28,35 +25,29 @@ class AuthService:
             phone_number=data.phone_number,
             role=data.role
         )
-
         self.db.add(user)
         try:
             self.db.commit()
             self.db.refresh(user)
             logger.info(f"User registered successfully | id={user.id} | email={user.email} | role={user.role}")
             return user
-        except IntegrityError as e:
+        except Exception as e:
             self.db.rollback()
             logger.error(f"Failed to register user | email={data.email} | error={str(e)}")
             raise UserAlreadyExists()
-    
-    def login(self, data: UserLogin, request: Request):
+
+    def login(self, data: UserLogin, ip_address: str = None):
         user = self.db.query(User).filter(User.email == data.email).first()
         now = datetime.now(timezone.utc)
 
         if not user or not verify_password(data.password, user.password):
             if user:
                 user.failed_attempts += 1
-
-                if not user.account_locked_until or user.account_locked_until <= now:
-                    self.db.query(User).filter(User.id == user.id).update({
-                        "failed_attempts": User.failed_attempts + 1,
-                        "account_locked_until": (now + timedelta(minutes=self.LOCK_DURATION_MINUTES))
-                        if (user.failed_attempts + 1) >= self.MAX_ATTEMPTS else None
-                    })
-                    self.db.commit()
-
-            logger.warning(f"Invalid login attempt | email={data.email}")
+                if user.failed_attempts >= self.MAX_ATTEMPTS:
+                    user.account_locked_until = now + timedelta(minutes=self.LOCK_DURATION_MINUTES)
+                    logger.warning(f"Account locked | user_id={user.id}")
+                self.db.commit()
+            logger.warning(f"Invalid login attempt | email={data.email} | ip={ip_address}")
             raise InvalidCredentials("Invalid email or password.")
 
         if user.account_locked_until and user.account_locked_until > now:
@@ -76,9 +67,14 @@ class AuthService:
                 "sub": str(user.id),
                 "email": user.email,
                 "role": user.role,
-                "ip": request.client.host if request else None,
+                "ip": ip_address
             }
         )
-
-        logger.info(f"User logged in successfully | id={user.id} | email={user.email} | role={user.role}")
+        logger.info(f"User logged in successfully | id={user.id} | email={user.email} | role={user.role} | ip={ip_address}")
         return token, user
+
+    def logout(self, user_id: str, jti: str):
+        revoked = RevokedToken(jti=jti)
+        self.db.add(revoked)
+        self.db.commit()
+        logger.info(f"User logged out | user_id={user_id} | token_jti={jti}")

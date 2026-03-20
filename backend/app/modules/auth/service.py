@@ -1,10 +1,14 @@
 from datetime import datetime, timedelta, timezone
+
+import jwt
 from sqlalchemy.orm import Session
-from app.modules.auth.models import User, RevokedToken
+from app.modules.auth.models import RefreshToken, User, RevokedToken
 from app.modules.auth.schemas import UserCreate, UserLogin
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import create_refresh_token, hash_password, verify_password, create_access_token
 from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser
 from app.core.logging import get_logger
+from app.core.config import settings
+
 
 logger = get_logger("auth")
 
@@ -43,10 +47,13 @@ class AuthService:
         if not user or not verify_password(data.password, user.password):
             if user:
                 user.failed_attempts += 1
+
                 if user.failed_attempts >= self.MAX_ATTEMPTS:
                     user.account_locked_until = now + timedelta(minutes=self.LOCK_DURATION_MINUTES)
                     logger.warning(f"Account locked | user_id={user.id}")
+
                 self.db.commit()
+
             logger.warning(f"Invalid login attempt | email={data.email} | ip={ip_address}")
             raise InvalidCredentials("Invalid email or password.")
 
@@ -60,9 +67,8 @@ class AuthService:
 
         user.failed_attempts = 0
         user.account_locked_until = None
-        self.db.commit()
 
-        token = create_access_token(
+        access_token = create_access_token(
             data={
                 "sub": str(user.id),
                 "email": user.email,
@@ -70,11 +76,44 @@ class AuthService:
                 "ip": ip_address
             }
         )
-        logger.info(f"User logged in successfully | id={user.id} | email={user.email} | role={user.role} | ip={ip_address}")
-        return token, user
+
+        refresh_token = create_refresh_token({
+            "sub": str(user.id),
+            "email": user.email
+        })
+
+        payload = jwt.decode(
+            refresh_token,
+            settings.jwt_secret_key.get_secret_value(),
+            algorithms=[settings.jwt_algorithm],
+            audience="hms-users",
+            issuer=settings.app_name
+        )
+
+        refresh = RefreshToken(
+            user_id=user.id,
+            token=payload["jti"],
+            expires_at=now + timedelta(days=7)
+        )
+
+        self.db.add(refresh)
+        self.db.commit()
+
+        logger.info(
+            f"User logged in successfully | id={user.id} | email={user.email} | role={user.role} | ip={ip_address}"
+        )
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }, user
 
     def logout(self, user_id: str, jti: str):
         revoked = RevokedToken(jti=jti)
         self.db.add(revoked)
+
+        self.db.query(RefreshToken).filter_by(user_id=user_id).update({
+            "is_revoked": True
+        })
+
         self.db.commit()
-        logger.info(f"User logged out | user_id={user_id} | token_jti={jti}")

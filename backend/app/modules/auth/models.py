@@ -25,7 +25,6 @@ class User(TimestampMixin, SoftDeleteMixin, Base):
     department_id = Column(Integer, ForeignKey("departments.id", ondelete="SET NULL"), nullable=True)  
     qualification_id = Column(Integer, ForeignKey("qualifications.id", ondelete="SET NULL"), nullable=True) 
     specialization_id = Column(Integer, ForeignKey("specializations.id", ondelete="SET NULL"), nullable=True)  
-
     experience_years = Column(Integer, nullable=True)
     shift_start = Column(Time(timezone=True), nullable=True)
     shift_end = Column(Time(timezone=True), nullable=True)
@@ -62,3 +61,16 @@ class RevokedToken(TimestampMixin, Base):
     jti = Column(String(255), unique=True, index=True, nullable=False)
     revoked_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     reason = Column(Text, nullable=True)
+
+
+class RefreshToken(TimestampMixin, Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    parent_jti = Column(String(255), nullable=True, index=True)
+    token = Column(String(500), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_revoked = Column(Boolean, default=False)
+
+    user = relationship("User")

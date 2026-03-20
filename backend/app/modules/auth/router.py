@@ -2,7 +2,7 @@ from pytz import timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from app.core.deps import get_db, security
+from app.core.deps import get_current_user, get_db, security
 from app.modules.auth.schemas import UserCreate, UserLogin, UserResponse, TokenResponse, UserInfo
 from app.modules.auth.service import AuthService
 from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser, TokenExpired, InvalidToken
@@ -129,3 +129,12 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
         "access_token": access_token,
         "refresh_token": new_refresh_token
     }
+@router.post("/logout-all")
+def logout_all(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    auth_service = AuthService(db)
+    auth_service.logout_all_sessions(current_user["sub"])
+
+    return {"message": "Logged out from all sessions successfully"}

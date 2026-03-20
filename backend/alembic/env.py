@@ -24,10 +24,16 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.core.database import Base
-from app.modules.patient import models  # noqa: F401
-from app.modules.auth import models  # noqa: F401
-from app.modules.hospital import models  # noqa: F401
-from app.shared import models  # noqa: F401
+import app.modules.patient.models
+import app.modules.auth.models
+import app.modules.hospital.models
+import app.modules.specializations.models 
+import app.shared.models
+import app.modules.departments.models
+import app.modules.qualifications.models
+
+target_metadata = Base.metadata
+
 
 target_metadata = Base.metadata
 

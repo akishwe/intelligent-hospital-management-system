@@ -70,6 +70,8 @@ class RefreshToken(TimestampMixin, Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     parent_jti = Column(String(255), nullable=True, index=True)
     token = Column(String(500), nullable=False, unique=True, index=True)
+    ip_address = Column(String(50), nullable=True)
+    user_agent = Column(String(255), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_revoked = Column(Boolean, default=False)
 

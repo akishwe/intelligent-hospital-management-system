@@ -6,7 +6,6 @@ from app.core.config import settings
 from app.modules.patient.routes import router as patient_router
 from app.modules.auth.router import router as auth_router
 from app.core.deps import get_current_user
-from app.core.deps import 
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 

@@ -77,23 +77,15 @@ class AuthService:
             }
         )
 
-        refresh_token = create_refresh_token({
+        refresh_token, payload = create_refresh_token({
             "sub": str(user.id),
             "email": user.email
         })
 
-        payload = jwt.decode(
-            refresh_token,
-            settings.jwt_secret_key.get_secret_value(),
-            algorithms=[settings.jwt_algorithm],
-            audience="hms-users",
-            issuer=settings.app_name
-        )
-
         refresh = RefreshToken(
             user_id=user.id,
             token=payload["jti"],
-            expires_at=now + timedelta(days=7)
+            expires_at=datetime.fromtimestamp(payload["exp"], timezone.utc)
         )
 
         self.db.add(refresh)

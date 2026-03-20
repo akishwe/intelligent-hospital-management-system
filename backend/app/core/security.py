@@ -65,23 +65,27 @@ def decode_access_token(token: str, db: Session) -> dict:
     except JWTError:
         raise InvalidToken()
 
-def create_refresh_token(data: dict) -> str:
+def create_refresh_token(data: dict) -> tuple[str, dict]:
     to_encode = data.copy()
 
-    expire = datetime.now(timezone.utc) + timedelta(days=7)
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(days=7)
 
-    to_encode.update({
+    payload = {
+        **to_encode,
         "exp": int(expire.timestamp()),
-        "iat": int(datetime.now(timezone.utc).timestamp()),
-        "nbf": int(datetime.now(timezone.utc).timestamp()),
+        "iat": int(now.timestamp()),
+        "nbf": int(now.timestamp()),
         "jti": str(uuid.uuid4()),
         "type": "refresh",
         "iss": settings.app_name,
         "aud": "hms-users"
-    })
+    }
 
-    return jwt.encode(
-        to_encode,
+    token = jwt.encode(
+        payload,
         settings.jwt_secret_key.get_secret_value(),
         algorithm=settings.jwt_algorithm
     )
+
+    return token, payload

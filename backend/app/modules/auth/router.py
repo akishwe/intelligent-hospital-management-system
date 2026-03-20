@@ -1,3 +1,5 @@
+from pytz import timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from app.core.deps import get_db, security
@@ -9,6 +11,8 @@ from app.core.security import decode_access_token, create_access_token
 from app.modules.auth.models import RefreshToken, User
 from jose import JWTError, jwt, ExpiredSignatureError
 from app.core.config import get_settings
+from  datetime import datetime, timezone
+from app.core.security import create_refresh_token
 
 settings = get_settings()
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -72,18 +76,56 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     jti = payload.get("jti")
     user_id = payload.get("sub")
 
-    token_entry = db.query(RefreshToken).filter_by(token=jti).first()
-    if not token_entry or token_entry.is_revoked:
-        raise HTTPException(status_code=401, detail="Token revoked")
+    if not jti or not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == int(user_id)).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="Invalid user")
 
-    access_token = create_access_token({
-        "sub": str(user.id),
-        "email": user.email,
-        "role": user.role
+    token_entry = db.query(RefreshToken).filter_by(
+        token=jti,
+        user_id=user.id
+    ).first()
+
+    if not token_entry:
+        raise HTTPException(status_code=401, detail="Token not recognized")
+
+    if token_entry.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Token expired")
+
+    if token_entry.is_revoked:
+        db.query(RefreshToken).filter_by(user_id=user.id).update({
+            "is_revoked": True
+        })
+        db.commit()
+
+        raise HTTPException(
+            status_code=401,
+            detail="Token reuse detected. All sessions revoked."
+        )
+
+    token_entry.is_revoked = True
+
+    new_refresh_token, new_payload = create_refresh_token({
+        "sub": str(user.id)
     })
 
-    return {"access_token": access_token}
+    new_entry = RefreshToken(
+        user_id=user.id,
+        token=new_payload["jti"],
+        expires_at=datetime.fromtimestamp(new_payload["exp"], timezone.utc),
+        parent_jti=jti
+    )
+
+    access_token = create_access_token({
+        "sub": str(user.id)
+    })
+
+    db.add(new_entry)
+    db.commit()
+
+    return {
+        "access_token": access_token,
+        "refresh_token": new_refresh_token
+    }

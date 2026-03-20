@@ -16,6 +16,11 @@ class User(TimestampMixin, SoftDeleteMixin, Base):
     last_name = Column(String(100), nullable=False)
     gender = Column(Enum(Gender), nullable=True)
     date_of_birth = Column(DateTime(timezone=True), nullable=True)
+    hospitals = relationship(
+        "Hospital",
+        secondary="user_hospital_association",
+        back_populates="users"
+    )
     hospital_id = Column(Integer, ForeignKey("hospitals.id", ondelete="SET NULL"), nullable=True, index=True)
     created_by = Column(Integer, ForeignKey('users.id', ondelete="SET NULL"), nullable=True)
     updated_by = Column(Integer, ForeignKey('users.id', ondelete="SET NULL"), nullable=True)

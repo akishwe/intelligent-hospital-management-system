@@ -14,7 +14,7 @@ router = APIRouter(prefix="/hospitals", tags=["Hospitals"])
 def create_hospital(
     hospital_data: HospitalCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+    _: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
 ):
     return HospitalService.create_hospital(db, hospital_data)
 
@@ -42,10 +42,7 @@ def get_hospitals(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_roles([
-        UserRole.SUPER_ADMIN,
-        UserRole.ADMIN
-    ]))
+    _: dict = Depends(require_roles([UserRole.SUPER_ADMIN, UserRole.ADMIN]))
 ):
     return HospitalService.get_hospitals(db, skip, limit)
 
@@ -54,10 +51,7 @@ def update_hospital(
     hospital_id: int,
     hospital_data: HospitalUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_roles([
-        UserRole.SUPER_ADMIN,
-        UserRole.ADMIN
-    ]))
+    _: dict = Depends(require_roles([UserRole.SUPER_ADMIN, UserRole.ADMIN]))
 ):
     return HospitalService.update_hospital(db, hospital_id, hospital_data)
 
@@ -65,6 +59,6 @@ def update_hospital(
 def delete_hospital(
     hospital_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
+    _: dict = Depends(require_roles([UserRole.SUPER_ADMIN]))
 ):
     return HospitalService.delete_hospital(db, hospital_id)

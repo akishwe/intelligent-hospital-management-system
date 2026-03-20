@@ -8,6 +8,8 @@ from app.core.security import create_refresh_token, hash_password, verify_passwo
 from app.core.exceptions import UserAlreadyExists, InvalidCredentials, InActiveUser
 from app.core.logging import get_logger
 from app.core.config import settings
+from app.modules.hospital.models import Hospital
+from app.core.enums import UserRole
 
 
 logger = get_logger("auth")
@@ -21,14 +23,25 @@ class AuthService:
 
     def register(self, data: UserCreate) -> User:
         hashed_password = hash_password(data.password)
+
+        hospitals = []
+        if data.hospital_ids:
+            hospitals = self.db.query(Hospital).filter(Hospital.id.in_(data.hospital_ids)).all()
+
+        if data.role != UserRole.DOCTOR and len(hospitals) > 1:
+            raise ValueError(f"{data.role} cannot be assigned to multiple hospitals.")
+
         user = User(
             email=data.email,
             password=hashed_password,
             first_name=data.first_name,
             last_name=data.last_name,
             phone_number=data.phone_number,
-            role=data.role
+            role=data.role,
+            hospitals=hospitals,
+            hospital_id=hospitals[0].id if hospitals and len(hospitals) == 1 else None
         )
+
         self.db.add(user)
         try:
             self.db.commit()

@@ -12,6 +12,7 @@ class UserInfo(BaseModel):
     last_name: str
     phone_number: str
     role: UserRole
+    hospital_ids: list[int] = []
     is_active: bool
     gender: Optional[Gender] = None
     date_of_birth: Optional[date] = None
@@ -93,6 +94,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6, max_length=64)
+    hospital_ids: Optional[list[int]] = None
 
 
 class UserUpdate(BaseModel):
